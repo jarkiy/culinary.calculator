@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🍳 Кулинарный калькулятор</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>🍳 Кулинарный калькулятор</h1>
+    <p>Рассчитайте стоимость и пищевую ценность ваших рецептов</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn" data-tab="products">🥕 Ингредиенты</button>
+    <button class="tab-btn active" data-tab="calc">🥘 Рецепт</button>
+    <button class="tab-btn" data-tab="markup">📊 Еще..</button>
+  </div>
+
+  <div id="calc" class="tab-content active">
+    <h2 class="section-title">Создание рецепта</h2>
+    <div>
+      <label for="recipeName">🍽️ Название:</label>
+      <input type="text" id="recipeName" placeholder="Название вашего блюда" style="width: 100%; padding: 8px 12px; border: 1px solid #d4a574; border-radius: 8px; font-size: 16px;">
+    </div>
+    <div id="inputs"></div>
+    
+    <div class="calc-actions">
+      <button id="addCalcRowBtn">➕ Добавить ингредиент</button>
+      <button id="clearAllBtn" style="background:linear-gradient(to bottom, #ffe6e6, #ffcccc); color:#b22222;">🗑️ Очистить всё</button>
+    </div>
+
+    <div id="result">
+      Нет данных
+    </div>
+  </div>
+
+  <div id="products" class="tab-content">
+    <h2 class="section-title">Добавить ингредиент</h2>
+    
+    <div class="product-form-grid">
+      <div class="basic-info-section">
+        <div class="form-field">
+          <label>🍎 Название ингредиента:</label>
+          <input type="text" id="newProductName" placeholder="Например, Яйцо куриное">
+        </div>
+        
+        <div class="pack-unit-row">
+          <div class="form-field">
+            <label>📦 Упаковка:</label>
+            <input type="number" id="newProductPack" min="1" value="10" step="1">
+          </div>
+          <div class="form-field">
+            <label>📏 Ед. изм.:</label>
+            <select id="newProductUnit">
+              <option value="шт">🥚 штуки</option>
+              <option value="мл">🥛 миллилитры</option>
+              <option value="гр">⚖️ граммы</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-field">
+          <label>💰 Цена (₽):</label>
+          <input type="number" id="newProductPrice" min="0" step="0.01" value="120" placeholder="120.00">
+        </div>
+      </div>
+      
+      <div class="nutrition-section">
+        <h3 style="color: #8b4513; margin-top: 0; margin-bottom: 0;">🥗 Пищевая ценность на 100 г</h3>
+        <div class="nutrition-grid-new">
+          <div class="nutrition-item">
+            <div class="nutrition-label">Белки (г)</div>
+            <input type="number" id="newProtein" min="0" step="0.1" value="0" placeholder="12.0" class="nutrition-input">
+          </div>
+          <div class="nutrition-item">
+            <div class="nutrition-label">Жиры (г)</div>
+            <input type="number" id="newFat" min="0" step="0.1" value="0" placeholder="11.0" class="nutrition-input">
+          </div>
+          <div class="nutrition-item">
+            <div class="nutrition-label">Углеводы (г)</div>
+            <input type="number" id="newCarbs" min="0" step="0.1" value="0" placeholder="0.7" class="nutrition-input">
+          </div>
+          <div class="nutrition-item">
+            <div class="nutrition-label">Ккал</div>
+            <input type="number" id="newCalories" min="0" step="1" value="0" placeholder="157" class="nutrition-input">
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <button id="addProductBtn" class="add-product-btn">➕ Добавить в базу ингредиентов</button>
+
+    <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+      <button id="toggleNameSortBtn">📝 Сортировать: А-Я</button>
+      <button id="togglePriceSortBtn">💰 Сортировать: Цена ⬇</button>
+    </div>
+
+    <h2 class="section-title" style="margin-top: 25px;">📋 Список ингредиентов</h2>
+    <div class="product-list" id="productListDisplay"></div>
+  </div>
+
+  <div id="markup" class="tab-content">
+    <h2 class="section-title">Дополнительные расходы</h2>
+    
+    <div style="background: #fffaf0; padding: 20px; border-radius: 10px; border: 1px solid #e6ccb2; margin-bottom: 20px;">
+      <div style="margin-bottom: 16px; display: flex; align-items: center;">
+        <label style="width: 120px;">👨‍🍳 Работа:</label>
+        <input type="number" id="laborValue" min="0" step="0.01" value="0" placeholder="0.00" style="width: 120px;">
+        <select id="laborType" style="width: 80px; margin-left: 10px;">
+          <option value="fixed">₽</option>
+          <option value="percent">%</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 16px; display: flex; align-items: center;">
+        <label style="width: 120px;">🚚 Доставка:</label>
+        <input type="number" id="delivery" min="0" step="0.01" value="0" placeholder="0.00" style="width: 120px;"> ₽
+      </div>
+
+      <div style="margin-bottom: 16px; display: flex; align-items: center;">
+        <label style="width: 120px;">🎁 Упаковка:</label>
+        <input type="number" id="packaging" min="0" step="0.01" value="0" placeholder="0.00" style="width: 120px;"> ₽
+      </div>
+
+      <button id="saveMarkupBtn" style="margin-top: 10px; width: 100%; justify-content: center;">💾 Сохранить настройки</button>
+    </div>
+    
+    <div style="background: #f0f8ff; padding: 15px; border-radius: 10px; border: 1px solid #b0c4de; margin-top: 20px;">
+      <h3 style="color: #4682b4; margin-top: 0;">💡 Совет</h3>
+      <p style="margin: 0; color: #5c3d2e; font-size: 14px;">Укажите дополнительные расходы для более точного расчёта себестоимости ваших блюд. Это поможет определить реальную стоимость рецепта.</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>🍲 Приятного приготовления!</p>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
