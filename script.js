@@ -176,15 +176,15 @@ function editProduct(index) {
     : '';
 
   formDiv.innerHTML = `
-    <input type="text" value="${item.name}" data-field="name" style="width:120px;" placeholder="Название" required>
-    <input type="number" value="${item.pack}" min="1" step="1" data-field="pack" style="width:80px;" placeholder="Упак." required>
+    <input type="text" value="${item.name}" data-field="name" style="width:120px;" placeholder="Название">
+    <input type="number" value="${item.pack}" min="1" step="1" data-field="pack" style="width:80px;" placeholder="Упак.">
     <select data-field="unit" style="width:90px;">
       <option value="шт" ${item.unit === 'шт' ? 'selected' : ''}>🥚 шт</option>
       <option value="мл" ${item.unit === 'мл' ? 'selected' : ''}>🥛 мл</option>
       <option value="гр" ${item.unit === 'гр' ? 'selected' : ''}>⚖️ гр</option>
     </select>
     ${weightInput}
-    <input type="number" value="${item.price}" min="0" step="0.01" data-field="price" style="width:90px;" placeholder="Цена" required>
+    <input type="number" value="${item.price}" min="0" step="0.01" data-field="price" style="width:90px;" placeholder="Цена">
     
     <input type="number" value="${item.protein}" min="0" step="0.1" data-field="protein" placeholder="Белки" style="width:70px;">
     <input type="number" value="${item.fat}" min="0" step="0.1" data-field="fat" placeholder="Жиры" style="width:70px;">
@@ -197,16 +197,20 @@ function editProduct(index) {
   productItem.innerHTML = '';
   productItem.appendChild(formDiv);
 
-  // Динамическое появление поля веса при смене unit
   const unitSelect = formDiv.querySelector('[data-field="unit"]');
-  const weightField = formDiv.querySelector('[data-field="weightPerUnit"]');
-  if (unitSelect && !weightField) {
+  if (unitSelect) {
     unitSelect.addEventListener('change', () => {
-      const weightInput = unitSelect.value === 'шт'
-        ? `<input type="number" value="" min="0.1" step="0.1" data-field="weightPerUnit" placeholder="Вес 1 шт, г" style="width:90px;" required>`
-        : '';
-      const priceInput = formDiv.querySelector('[data-field="price"]');
-      priceInput.insertAdjacentHTML('beforebegin', weightInput);
+      const weightField = formDiv.querySelector('[data-field="weightPerUnit"]');
+      if (unitSelect.value === 'шт') {
+        if (!weightField) {
+          const priceInput = formDiv.querySelector('[data-field="price"]');
+          priceInput.insertAdjacentHTML('beforebegin', 
+            '<input type="number" value="" min="0.1" step="0.1" data-field="weightPerUnit" placeholder="Вес 1 шт, г" style="width:90px;" required>'
+          );
+        }
+      } else {
+        if (weightField) weightField.remove();
+      }
     });
   }
 }
@@ -306,14 +310,15 @@ function addProductToList() {
 
   // Сброс формы
   document.getElementById('newProductName').value = '';
-  document.getElementById('newProductPack').value = '10';
+  document.getElementById('newProductPack').value = '';
   document.getElementById('newProductUnit').value = 'шт';
-  document.getElementById('newProductPrice').value = '0';
-  document.getElementById('newWeightPerUnit').value = '';
-  document.getElementById('newProtein').value = '0';
-  document.getElementById('newFat').value = '0';
-  document.getElementById('newCarbs').value = '0';
-  document.getElementById('newCalories').value = '0';
+  document.getElementById('newProductPrice').value = '';
+  const weightField = document.getElementById('newWeightPerUnit');
+  if (weightField) weightField.value = '';
+  document.getElementById('newProtein').value = '';
+  document.getElementById('newFat').value = '';
+  document.getElementById('newCarbs').value = '';
+  document.getElementById('newCalories').value = '';
 }
 
 function getProductInfo(name) {
@@ -365,6 +370,15 @@ function createUnitLabel(unit) {
 }
 
 function updateAllCalcSelects() {
+  let activeRowIndex = -1;
+  let activeInputValue = '';
+  const activeElement = document.activeElement;
+  if (activeElement && activeElement.matches('#inputs .row input[type="number"]')) {
+    const row = activeElement.closest('.row');
+    activeRowIndex = Array.from(document.querySelectorAll('#inputs .row')).indexOf(row);
+    activeInputValue = activeElement.value;
+  }
+
   document.querySelectorAll('#inputs .row').forEach(row => {
     const oldSelect = row.querySelector('select');
     const inputGroup = row.querySelector('.input-group');
@@ -392,6 +406,18 @@ function updateAllCalcSelects() {
     oldQtyInput.replaceWith(newQtyInput);
     oldUnitLabel.replaceWith(newUnitLabel);
   });
+
+  if (activeRowIndex >= 0) {
+    const rows = document.querySelectorAll('#inputs .row');
+    if (rows[activeRowIndex]) {
+      const newInput = rows[activeRowIndex].querySelector('input[type="number"]');
+      if (newInput) {
+        newInput.value = activeInputValue;
+        newInput.focus();
+      }
+    }
+  }
+
   updateResultAndSave();
 }
 
@@ -468,15 +494,13 @@ function updateResult() {
     const cost = qty * pricePerUnit;
     baseTotal += cost;
 
-    // --- Расчёт реального веса ---
     let actualWeight = 0;
     if (product.unit === 'шт') {
       actualWeight = qty * (product.weightPerUnit || 0);
     } else {
-      actualWeight = qty; // гр или мл
+      actualWeight = qty;
     }
 
-    // --- Расчёт БЖУ ---
     const factor = actualWeight / 100;
     totalWeight += actualWeight;
     totalProtein += product.protein * factor;
@@ -629,9 +653,7 @@ function saveCalcRows() {
   localStorage.setItem('calcRows', JSON.stringify(rows));
 }
 
-// Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', () => {
-  // Обработчики вкладок
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const tabName = btn.getAttribute('data-tab');
@@ -639,7 +661,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Обработчики кнопок
   document.getElementById('addCalcRowBtn').addEventListener('click', addCalcRow);
   document.getElementById('clearAllBtn').addEventListener('click', clearAllRows);
   document.getElementById('addProductBtn').addEventListener('click', addProductToList);
@@ -647,7 +668,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('togglePriceSortBtn').addEventListener('click', togglePriceSort);
   document.getElementById('saveMarkupBtn').addEventListener('click', saveMarkup);
 
-  // Делегирование событий
   document.getElementById('productListDisplay').addEventListener('click', (e) => {
     if (e.target.classList.contains('edit-product-btn')) {
       const index = parseInt(e.target.getAttribute('data-index'));
@@ -671,7 +691,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Обработчики изменений
   document.getElementById('result').addEventListener('change', (e) => {
     if (e.target.id === 'detailedMode') {
       updateResultAndSave();
@@ -684,7 +703,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Resize handler (с debounce)
   let resizeTimeout;
   let lastWidth = window.innerWidth;
   window.addEventListener('resize', () => {
@@ -697,9 +715,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Динамическое поле веса в форме добавления
   const unitSelect = document.getElementById('newProductUnit');
-  const basicSection = document.querySelector('.basic-info-section');
   const packUnitRow = document.querySelector('.pack-unit-row');
 
   function toggleWeightInput() {
@@ -707,28 +723,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let weightInput = document.getElementById('newWeightPerUnit');
     if (isPiece) {
       if (!weightInput) {
-        weightInput = document.createElement('input');
-        weightInput.type = 'number';
-        weightInput.id = 'newWeightPerUnit';
-        weightInput.min = '0.1';
-        weightInput.step = '0.1';
-        weightInput.placeholder = 'Вес 1 шт, г';
-        weightInput.required = true;
-        weightInput.style.width = '100%';
-        weightInput.style.marginTop = '5px';
-        weightInput.style.padding = '8px';
-        weightInput.style.borderRadius = '8px';
-        weightInput.style.border = '1px solid #d4a574';
-        weightInput.style.background = '#fffaf0';
-        const label = document.createElement('label');
-        label.textContent = '⚖️ Вес одной штуки (г):';
-        label.style.display = 'block';
-        label.style.marginBottom = '5px';
-        label.style.fontWeight = '600';
         const wrapper = document.createElement('div');
-        wrapper.className = 'form-field';
-        wrapper.appendChild(label);
-        wrapper.appendChild(weightInput);
+        wrapper.className = 'form-field weight-per-unit-field';
+        wrapper.innerHTML = `
+          <label>⚖️ Вес одной штуки (г):</label>
+          <input type="number" id="newWeightPerUnit" min="0.1" step="0.1" placeholder="Например, 50" required>
+        `;
         packUnitRow.after(wrapper);
       }
     } else {
@@ -737,7 +737,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   unitSelect.addEventListener('change', toggleWeightInput);
-  toggleWeightInput(); // init
+  toggleWeightInput();
 
   loadAllData();
 });
