@@ -123,7 +123,7 @@ function renderProductList() {
   } else if (sortType === 'price-asc') {
     sorted.sort((a, b) => a.price - b.price);
   } else if (sortType === 'price-desc') {
-    sorted.sort((a, b) => b.price - a.price);
+    sorted.sort((a, b) => b.price - b.price);
   }
 
   sorted.forEach(item => {
@@ -172,18 +172,18 @@ function editProduct(index) {
   formDiv.className = 'edit-form';
   formDiv.innerHTML = `
     <input type="text" value="${item.name}" data-field="name" style="width:120px;" placeholder="Название">
-    <input type="number" value="${item.pack}" min="1" step="1" data-field="pack" style="width:80px;" placeholder="Упак.">
+    <input type="text" value="${item.pack}" data-field="pack" style="width:80px;" placeholder="Упак.">
     <select data-field="unit" style="width:90px;">
       <option value="шт" ${item.unit === 'шт' ? 'selected' : ''}>🥚 шт</option>
       <option value="мл" ${item.unit === 'мл' ? 'selected' : ''}>🥛 мл</option>
       <option value="гр" ${item.unit === 'гр' ? 'selected' : ''}>⚖️ гр</option>
     </select>
-    <input type="number" value="${item.price}" min="0" step="0.01" data-field="price" style="width:90px;" placeholder="Цена">
+    <input type="text" value="${item.price}" data-field="price" style="width:90px;" placeholder="Цена">
     
-    <input type="number" value="${item.protein}" min="0" step="0.1" data-field="protein" placeholder="Белки" style="width:70px;">
-    <input type="number" value="${item.fat}" min="0" step="0.1" data-field="fat" placeholder="Жиры" style="width:70px;">
-    <input type="number" value="${item.carbs}" min="0" step="0.1" data-field="carbs" placeholder="Угл." style="width:70px;">
-    <input type="number" value="${item.calories}" min="0" step="1" data-field="calories" placeholder="Ккал" style="width:70px;">
+    <input type="text" value="${item.protein}" data-field="protein" placeholder="Белки" style="width:70px;">
+    <input type="text" value="${item.fat}" data-field="fat" placeholder="Жиры" style="width:70px;">
+    <input type="text" value="${item.carbs}" data-field="carbs" placeholder="Угл." style="width:70px;">
+    <input type="text" value="${item.calories}" data-field="calories" placeholder="Ккал" style="width:70px;">
     
     <button type="button" class="save-edit-btn" data-index="${index}">✅</button>
     <button type="button" class="cancel-edit-btn" data-index="${index}">❌</button>
@@ -195,14 +195,14 @@ function editProduct(index) {
 function saveEdit(index, btn) {
   const form = btn.closest('.edit-form');
   const name = form.querySelector('[data-field="name"]').value.trim();
-  const pack = parseFloat(form.querySelector('[data-field="pack"]').value) || 1;
+  const pack = parseFloat(form.querySelector('[data-field="pack"]').value.replace(',', '.')) || 1;
   const unit = form.querySelector('[data-field="unit"]').value;
-  const price = parseFloat(form.querySelector('[data-field="price"]').value) || 0;
+  const price = parseFloat(form.querySelector('[data-field="price"]').value.replace(',', '.')) || 0;
 
-  const protein = parseFloat(form.querySelector('[data-field="protein"]')?.value) || 0;
-  const fat = parseFloat(form.querySelector('[data-field="fat"]')?.value) || 0;
-  const carbs = parseFloat(form.querySelector('[data-field="carbs"]')?.value) || 0;
-  const calories = parseFloat(form.querySelector('[data-field="calories"]')?.value) || 0;
+  const protein = parseFloat(form.querySelector('[data-field="protein"]')?.value.replace(',', '.')) || 0;
+  const fat = parseFloat(form.querySelector('[data-field="fat"]')?.value.replace(',', '.')) || 0;
+  const carbs = parseFloat(form.querySelector('[data-field="carbs"]')?.value.replace(',', '.')) || 0;
+  const calories = parseFloat(form.querySelector('[data-field="calories"]')?.value.replace(',', '.')) || 0;
 
   if (!name) {
     alert('Название не может быть пустым');
@@ -236,14 +236,14 @@ function removeProduct(index) {
 
 function addProductToList() {
   const name = document.getElementById('newProductName').value.trim();
-  const pack = parseFloat(document.getElementById('newProductPack').value) || 1;
+  const pack = parseFloat(document.getElementById('newProductPack').value.replace(',', '.')) || 1;
   const unit = document.getElementById('newProductUnit').value;
-  const price = parseFloat(document.getElementById('newProductPrice').value) || 0;
+  const price = parseFloat(document.getElementById('newProductPrice').value.replace(',', '.')) || 0;
   
-  const protein = parseFloat(document.getElementById('newProtein').value) || 0;
-  const fat = parseFloat(document.getElementById('newFat').value) || 0;
-  const carbs = parseFloat(document.getElementById('newCarbs').value) || 0;
-  const calories = parseFloat(document.getElementById('newCalories').value) || 0;
+  const protein = parseFloat(document.getElementById('newProtein').value.replace(',', '.')) || 0;
+  const fat = parseFloat(document.getElementById('newFat').value.replace(',', '.')) || 0;
+  const carbs = parseFloat(document.getElementById('newCarbs').value.replace(',', '.')) || 0;
+  const calories = parseFloat(document.getElementById('newCalories').value.replace(',', '.')) || 0;
 
   if (!name) {
     alert('Введите название');
@@ -294,25 +294,34 @@ function createProductSelect(selectedName = '') {
   return select;
 }
 
+// Функция для валидации числового ввода
+function validateNumberInput(value, allowDecimal = true) {
+  // Заменяем запятую на точку
+  value = value.replace(',', '.');
+  
+  // Удаляем все, кроме цифр и точки (если разрешено)
+  if (allowDecimal) {
+    value = value.replace(/[^\d.]/g, '');
+    // Удаляем лишние точки
+    const parts = value.split('.');
+    if (parts.length > 2) {
+      value = parts[0] + '.' + parts.slice(1).join('');
+    }
+  } else {
+    value = value.replace(/\D/g, '');
+  }
+  
+  return value;
+}
+
 function createQtyInput(unit, value = '') {
   const input = document.createElement('input');
-  input.type = 'number';
-  input.min = '0';
+  input.type = 'text'; // Меняем на text для мобильных устройств
   input.value = value;
   
   // Атрибуты для лучшей работы на мобильных
   input.setAttribute('inputmode', 'decimal');
-  
-  if (unit === 'мл') {
-    input.step = '0.1';
-    input.placeholder = 'мл';
-  } else if (unit === 'гр') {
-    input.step = '1';
-    input.placeholder = 'гр';
-  } else {
-    input.step = '1';
-    input.placeholder = 'шт';
-  }
+  input.setAttribute('pattern', '[0-9]*[.,]?[0-9]*');
   
   // Стили для предотвращения проблем с фокусом
   input.style.cssText = `
@@ -321,7 +330,40 @@ function createQtyInput(unit, value = '') {
     -ms-user-select: text;
     user-select: text;
     -webkit-tap-highlight-color: transparent;
+    appearance: none;
   `;
+  
+  if (unit === 'мл') {
+    input.placeholder = 'мл';
+  } else if (unit === 'гр') {
+    input.placeholder = 'гр';
+  } else {
+    input.placeholder = 'шт';
+  }
+  
+  // Обработчик ввода для валидации
+  input.addEventListener('input', function(e) {
+    const cursorPosition = this.selectionStart;
+    const oldValue = this.value;
+    
+    // Валидируем ввод
+    this.value = validateNumberInput(this.value, unit !== 'шт');
+    
+    // Восстанавливаем позицию курсора
+    const diff = this.value.length - oldValue.length;
+    this.setSelectionRange(cursorPosition + diff, cursorPosition + diff);
+    
+    scheduleUpdate();
+  });
+  
+  // Обработчик для blur (когда поле теряет фокус)
+  input.addEventListener('blur', function() {
+    // Очищаем поле, если там только точка или запятая
+    if (this.value === '.' || this.value === ',') {
+      this.value = '';
+    }
+    scheduleUpdate();
+  });
   
   return input;
 }
@@ -337,7 +379,7 @@ function updateAllCalcSelects() {
   document.querySelectorAll('#inputs .row').forEach(row => {
     const oldSelect = row.querySelector('select');
     const inputGroup = row.querySelector('.input-group');
-    const oldQtyInput = inputGroup.querySelector('input[type="number"]');
+    const oldQtyInput = inputGroup.querySelector('input[type="text"]');
     const oldUnitLabel = inputGroup.querySelector('.unit-label');
 
     const selectedName = oldSelect.value;
@@ -347,7 +389,7 @@ function updateAllCalcSelects() {
     const newUnitLabel = createUnitLabel(unit);
 
     newSelect.onchange = () => {
-      const qtyInput = inputGroup.querySelector('input[type="number"]');
+      const qtyInput = inputGroup.querySelector('input[type="text"]');
       const unitLabel = inputGroup.querySelector('.unit-label');
       const newUnit = getProductInfo(newSelect.value).unit;
       const newQty = createQtyInput(newUnit, qtyInput.value);
@@ -386,7 +428,7 @@ function addCalcRowWithData(productName = '', qty = '') {
   const deleteBtn = document.createElement('button');
   deleteBtn.textContent = '🗑️';
   deleteBtn.classList.add('delete-row-btn');
-  deleteBtn.type = 'button'; // Важно для предотвращения отправки формы
+  deleteBtn.type = 'button';
 
   const inputGroup = document.createElement('div');
   inputGroup.className = 'input-group';
@@ -399,11 +441,6 @@ function addCalcRowWithData(productName = '', qty = '') {
     unitLabel.replaceWith(newUnitEl);
     scheduleUpdate();
   };
-
-  // Обработчик для поля ввода с отложенным обновлением
-  qtyInput.addEventListener('input', () => {
-    scheduleUpdate();
-  });
 
   inputGroup.append(qtyInput, unitLabel, deleteBtn);
   div.append(select, inputGroup);
@@ -434,7 +471,7 @@ function scheduleUpdate() {
       saveCalcRows();
       isUpdating = false;
     }
-  }, 500); // 500ms задержка
+  }, 300); // 300ms задержка
 }
 
 function updateResult() {
@@ -451,12 +488,13 @@ function updateResult() {
 
   document.querySelectorAll('#inputs .row').forEach(row => {
     const select = row.querySelector('select');
-    const qtyInput = row.querySelector('.input-group input[type="number"]');
+    const qtyInput = row.querySelector('.input-group input[type="text"]');
     const productName = select.value;
     if (!productName || productName === '— Выберите ингредиент —') return;
 
     const product = getProductInfo(productName);
-    const qty = parseFloat(qtyInput.value) || 0;
+    const qtyValue = qtyInput.value.replace(',', '.');
+    const qty = parseFloat(qtyValue) || 0;
     const pricePerUnit = product.price / product.pack;
     const cost = qty * pricePerUnit;
     baseTotal += cost;
@@ -606,7 +644,7 @@ function saveCalcRows() {
   const rows = [];
   document.querySelectorAll('#inputs .row').forEach(row => {
     const select = row.querySelector('select');
-    const qty = row.querySelector('.input-group input[type="number"]').value;
+    const qty = row.querySelector('.input-group input[type="text"]').value;
     if (select.value && select.value !== '— Выберите ингредиент —') {
       rows.push({ product: select.value, qty });
     }
@@ -678,8 +716,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Обработчик для изменений в дополнительных расходах
   document.getElementById('markup')?.addEventListener('input', (e) => {
-    if (e.target.matches('input[type="number"]') || e.target.matches('select')) {
+    if (e.target.matches('input[type="text"]') || e.target.matches('input[type="number"]') || e.target.matches('select')) {
       scheduleUpdate();
+    }
+  });
+
+  // Также обновляем обработку других числовых полей
+  document.querySelectorAll('input[type="number"]').forEach(input => {
+    // Заменяем type="number" на type="text" для мобильных
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+      input.type = 'text';
+      input.setAttribute('inputmode', 'decimal');
     }
   });
 
