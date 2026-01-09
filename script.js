@@ -71,10 +71,10 @@ function loadMarkup() {
 
 function saveMarkup() {
   const data = {
-    laborValue: document.getElementById('laborValue').value || '0',
+    laborValue: document.getElementById('laborValue').value,
     laborType: document.getElementById('laborType').value,
-    delivery: document.getElementById('delivery').value || '0',
-    packaging: document.getElementById('packaging').value || '0'
+    delivery: document.getElementById('delivery').value,
+    packaging: document.getElementById('packaging').value
   };
   localStorage.setItem('markupData', JSON.stringify(data));
   updateResult();
@@ -259,12 +259,12 @@ function addProductToList() {
   updateAllCalcSelects();
 
   document.getElementById('newProductName').value = '';
-  document.getElementById('newProductPack').value = '1';
-  document.getElementById('newProductPrice').value = '';
-  document.getElementById('newProtein').value = '';
-  document.getElementById('newFat').value = '';
-  document.getElementById('newCarbs').value = '';
-  document.getElementById('newCalories').value = '';
+  document.getElementById('newProductPack').value = '10';
+  document.getElementById('newProductPrice').value = '0';
+  document.getElementById('newProtein').value = '0';
+  document.getElementById('newFat').value = '0';
+  document.getElementById('newCarbs').value = '0';
+  document.getElementById('newCalories').value = '0';
 }
 
 function getProductInfo(name) {
@@ -290,15 +290,11 @@ function createProductSelect(selectedName = '') {
   return select;
 }
 
-function createQtyInput(unit, value = '') {
+function createQtyInput(unit, value = '1') {
   const input = document.createElement('input');
   input.type = 'number';
   input.min = '0';
   input.value = value;
-  
-  // Для мобильных устройств используем правильный inputmode
-  input.setAttribute('inputmode', 'decimal');
-  
   if (unit === 'мл') {
     input.step = '0.1';
     input.placeholder = 'мл';
@@ -309,7 +305,6 @@ function createQtyInput(unit, value = '') {
     input.step = '1';
     input.placeholder = 'шт';
   }
-  
   return input;
 }
 
@@ -320,8 +315,19 @@ function createUnitLabel(unit) {
   return span;
 }
 
+// === ИСПРАВЛЕНО: безопасное обновление селектов без потери фокуса ===
 function updateAllCalcSelects() {
-  document.querySelectorAll('#inputs .row').forEach(row => {
+  // Сохраняем информацию о текущем активном input
+  let activeRowIndex = -1;
+  let activeInputValue = '';
+  const activeElement = document.activeElement;
+  if (activeElement && activeElement.matches('#inputs .row input[type="number"]')) {
+    const row = activeElement.closest('.row');
+    activeRowIndex = Array.from(document.querySelectorAll('#inputs .row')).indexOf(row);
+    activeInputValue = activeElement.value;
+  }
+
+  document.querySelectorAll('#inputs .row').forEach((row, index) => {
     const oldSelect = row.querySelector('select');
     const inputGroup = row.querySelector('.input-group');
     const oldQtyInput = inputGroup.querySelector('input[type="number"]');
@@ -348,6 +354,19 @@ function updateAllCalcSelects() {
     oldQtyInput.replaceWith(newQtyInput);
     oldUnitLabel.replaceWith(newUnitLabel);
   });
+
+  // Восстанавливаем фокус, если нужно
+  if (activeRowIndex >= 0) {
+    const rows = document.querySelectorAll('#inputs .row');
+    if (rows[activeRowIndex]) {
+      const newInput = rows[activeRowIndex].querySelector('input[type="number"]');
+      if (newInput) {
+        newInput.value = activeInputValue;
+        newInput.focus();
+      }
+    }
+  }
+
   updateResultAndSave();
 }
 
@@ -357,10 +376,10 @@ function addCalcRow() {
     openTab('products');
     return;
   }
-  addCalcRowWithData('', '');
+  addCalcRowWithData('', '1');
 }
 
-function addCalcRowWithData(productName = '', qty = '') {
+function addCalcRowWithData(productName = '', qty = '1') {
   const container = document.getElementById('inputs');
   const div = document.createElement('div');
   div.className = 'row';
@@ -373,7 +392,6 @@ function addCalcRowWithData(productName = '', qty = '') {
   const deleteBtn = document.createElement('button');
   deleteBtn.textContent = '🗑️';
   deleteBtn.classList.add('delete-row-btn');
-  deleteBtn.type = 'button'; // Важно: указываем тип кнопки
 
   const inputGroup = document.createElement('div');
   inputGroup.className = 'input-group';
@@ -387,20 +405,10 @@ function addCalcRowWithData(productName = '', qty = '') {
     updateResultAndSave();
   };
 
-  // Добавляем обработчик для кнопки удаления
-  deleteBtn.addEventListener('click', function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    div.remove();
-    updateResultAndSave();
-  });
-
   inputGroup.append(qtyInput, unitLabel, deleteBtn);
   div.append(select, inputGroup);
   container.appendChild(div);
-  
   updateResultAndSave();
-  return div;
 }
 
 function clearAllRows() {
@@ -611,7 +619,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('togglePriceSortBtn').addEventListener('click', togglePriceSort);
   document.getElementById('saveMarkupBtn').addEventListener('click', saveMarkup);
 
-  // Делегирование событий для списка продуктов
+  // Делегирование событий
   document.getElementById('productListDisplay').addEventListener('click', (e) => {
     if (e.target.classList.contains('edit-product-btn')) {
       const index = parseInt(e.target.getAttribute('data-index'));
@@ -628,6 +636,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  document.getElementById('inputs').addEventListener('click', (e) => {
+    if (e.target.classList.contains('delete-row-btn')) {
+      e.target.closest('.row').remove();
+      updateResultAndSave();
+    }
+  });
+
   // Обработчики изменений
   document.getElementById('result').addEventListener('change', (e) => {
     if (e.target.id === 'detailedMode') {
@@ -641,8 +656,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // === ИСПРАВЛЕНО: debounce resize с проверкой реального изменения ширины ===
+  let resizeTimeout;
+  let lastWidth = window.innerWidth;
+
   window.addEventListener('resize', () => {
-    updateAllCalcSelects();
+    if (Math.abs(lastWidth - window.innerWidth) > 2) {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        lastWidth = window.innerWidth;
+        updateAllCalcSelects();
+      }, 200);
+    }
   });
 
   loadAllData();
