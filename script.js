@@ -373,6 +373,7 @@ function addCalcRowWithData(productName = '', qty = '') {
   const deleteBtn = document.createElement('button');
   deleteBtn.textContent = '🗑️';
   deleteBtn.classList.add('delete-row-btn');
+  deleteBtn.type = 'button'; // Важно: указываем тип кнопки
 
   const inputGroup = document.createElement('div');
   inputGroup.className = 'input-group';
@@ -386,10 +387,20 @@ function addCalcRowWithData(productName = '', qty = '') {
     updateResultAndSave();
   };
 
+  // Добавляем обработчик для кнопки удаления
+  deleteBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    div.remove();
+    updateResultAndSave();
+  });
+
   inputGroup.append(qtyInput, unitLabel, deleteBtn);
   div.append(select, inputGroup);
   container.appendChild(div);
+  
   updateResultAndSave();
+  return div;
 }
 
 function clearAllRows() {
@@ -600,7 +611,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('togglePriceSortBtn').addEventListener('click', togglePriceSort);
   document.getElementById('saveMarkupBtn').addEventListener('click', saveMarkup);
 
-  // Делегирование событий
+  // Делегирование событий для списка продуктов
   document.getElementById('productListDisplay').addEventListener('click', (e) => {
     if (e.target.classList.contains('edit-product-btn')) {
       const index = parseInt(e.target.getAttribute('data-index'));
@@ -614,13 +625,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (e.target.classList.contains('cancel-edit-btn')) {
       const index = parseInt(e.target.getAttribute('data-index'));
       cancelEdit(index);
-    }
-  });
-
-  document.getElementById('inputs').addEventListener('click', (e) => {
-    if (e.target.classList.contains('delete-row-btn')) {
-      e.target.closest('.row').remove();
-      updateResultAndSave();
     }
   });
 
