@@ -295,6 +295,11 @@ function createQtyInput(unit, value = '') {
   input.type = 'number';
   input.min = '0';
   input.value = value;
+  
+  // Важное исправление для мобильных устройств
+  input.setAttribute('inputmode', 'decimal');
+  input.setAttribute('pattern', '[0-9]*');
+  
   if (unit === 'мл') {
     input.step = '0.1';
     input.placeholder = 'мл';
@@ -306,19 +311,6 @@ function createQtyInput(unit, value = '') {
     input.placeholder = 'шт';
   }
   
-  // Исправление для мобильных устройств
-  input.addEventListener('touchstart', function(e) {
-    e.stopPropagation();
-  });
-  
-  input.addEventListener('mousedown', function(e) {
-    e.stopPropagation();
-  });
-  
-  input.addEventListener('click', function(e) {
-    e.stopPropagation();
-  });
-  
   return input;
 }
 
@@ -326,12 +318,6 @@ function createUnitLabel(unit) {
   const span = document.createElement('span');
   span.className = 'unit-label';
   span.textContent = unit;
-  
-  // Исправление для мобильных устройств
-  span.addEventListener('touchstart', function(e) {
-    e.stopPropagation();
-  });
-  
   return span;
 }
 
@@ -388,19 +374,9 @@ function addCalcRowWithData(productName = '', qty = '') {
   const deleteBtn = document.createElement('button');
   deleteBtn.textContent = '🗑️';
   deleteBtn.classList.add('delete-row-btn');
-  
-  // Исправление для мобильных устройств
-  deleteBtn.addEventListener('touchstart', function(e) {
-    e.stopPropagation();
-  });
 
   const inputGroup = document.createElement('div');
   inputGroup.className = 'input-group';
-  
-  // Исправление для мобильных устройств
-  inputGroup.addEventListener('touchstart', function(e) {
-    e.stopPropagation();
-  });
   
   select.onchange = () => {
     const newUnit = getProductInfo(select.value).unit;
@@ -413,21 +389,19 @@ function addCalcRowWithData(productName = '', qty = '') {
 
   inputGroup.append(qtyInput, unitLabel, deleteBtn);
   div.append(select, inputGroup);
-  
-  // Исправление для мобильных устройств - предотвращение закрытия клавиатуры
-  div.addEventListener('touchstart', function(e) {
-    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
-      e.stopPropagation();
-    }
-  });
-  
-  div.addEventListener('mousedown', function(e) {
-    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
-      e.stopPropagation();
-    }
-  });
-  
   container.appendChild(div);
+  
+  // Важное исправление: предотвращаем всплытие событий
+  const preventBubble = (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON') {
+      e.stopPropagation();
+    }
+  };
+  
+  div.addEventListener('touchstart', preventBubble, { passive: false });
+  div.addEventListener('mousedown', preventBubble, { passive: false });
+  div.addEventListener('click', preventBubble, { passive: false });
+  
   updateResultAndSave();
 }
 
@@ -590,12 +564,6 @@ function updateResult() {
   copyIcon.id = 'copyIcon';
   copyIcon.innerHTML = '📋';
   copyIcon.title = 'Копировать результат';
-  
-  // Исправление для мобильных устройств
-  copyIcon.addEventListener('touchstart', function(e) {
-    e.stopPropagation();
-  });
-  
   copyIcon.onclick = () => {
     navigator.clipboard?.writeText(text).then(() => {
       copyIcon.textContent = '✅';
@@ -631,7 +599,8 @@ function saveCalcRows() {
 document.addEventListener('DOMContentLoaded', () => {
   // Обработчики вкладок
   document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       const tabName = btn.getAttribute('data-tab');
       openTab(tabName);
     });
@@ -669,27 +638,44 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Обработчики изменений - исправлено для мобильных устройств
+  // Обработчики изменений
   document.getElementById('result').addEventListener('change', (e) => {
     if (e.target.id === 'detailedMode') {
       updateResultAndSave();
     }
   });
 
-  // Исправлено: используем событие 'input' с задержкой для мобильных устройств
-  let inputTimeout;
+  // Исправление для мобильных устройств: отдельный обработчик для полей ввода
   document.getElementById('inputs').addEventListener('input', (e) => {
     if (e.target.matches('input[type="number"]')) {
-      clearTimeout(inputTimeout);
-      inputTimeout = setTimeout(() => {
-        updateResultAndSave();
-      }, 300);
+      updateResultAndSave();
     }
   });
+
+  // Предотвращаем прокрутку и другие события при фокусе на поле ввода
+  document.getElementById('inputs').addEventListener('touchstart', (e) => {
+    if (e.target.tagName === 'INPUT') {
+      e.stopPropagation();
+    }
+  }, { passive: false });
+
+  document.getElementById('inputs').addEventListener('touchmove', (e) => {
+    if (e.target.tagName === 'INPUT') {
+      e.stopPropagation();
+    }
+  }, { passive: false });
 
   window.addEventListener('resize', () => {
     updateAllCalcSelects();
   });
+
+  // Исправление: отключаем поведение по умолчанию для всего контейнера
+  document.getElementById('inputs').addEventListener('touchstart', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  }, { passive: false });
 
   loadAllData();
 });
