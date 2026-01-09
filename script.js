@@ -3,6 +3,9 @@ let sortType = 'name';
 let priceSortDirection = 'desc';
 let nameSortDirection = 'asc';
 
+// Флаг для отслеживания состояния на мобильных устройствах
+let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
 function confirmDelete(action, callback) {
   const message = action === 'product' 
     ? 'Вы уверены, что хотите удалить этот ингредиент? 🗑️'
@@ -300,6 +303,10 @@ function createQtyInput(unit, value = '') {
   input.setAttribute('inputmode', 'decimal');
   input.setAttribute('pattern', '[0-9]*');
   
+  // Дополнительные атрибуты для улучшения работы на мобильных
+  input.style.webkitAppearance = 'none';
+  input.style.mozAppearance = 'textfield';
+  
   if (unit === 'мл') {
     input.step = '0.1';
     input.placeholder = 'мл';
@@ -309,6 +316,17 @@ function createQtyInput(unit, value = '') {
   } else {
     input.step = '1';
     input.placeholder = 'шт';
+  }
+  
+  // Отключаем обработку событий для самого input
+  if (isMobile) {
+    input.addEventListener('touchstart', function(e) {
+      e.stopPropagation();
+    }, { passive: true });
+    
+    input.addEventListener('touchend', function(e) {
+      e.stopPropagation();
+    }, { passive: true });
   }
   
   return input;
@@ -374,6 +392,14 @@ function addCalcRowWithData(productName = '', qty = '') {
   const deleteBtn = document.createElement('button');
   deleteBtn.textContent = '🗑️';
   deleteBtn.classList.add('delete-row-btn');
+  
+  // Исправление для кнопки удаления
+  deleteBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    div.remove();
+    updateResultAndSave();
+  });
 
   const inputGroup = document.createElement('div');
   inputGroup.className = 'input-group';
@@ -391,16 +417,27 @@ function addCalcRowWithData(productName = '', qty = '') {
   div.append(select, inputGroup);
   container.appendChild(div);
   
-  // Важное исправление: предотвращаем всплытие событий
-  const preventBubble = (e) => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON') {
-      e.stopPropagation();
-    }
-  };
-  
-  div.addEventListener('touchstart', preventBubble, { passive: false });
-  div.addEventListener('mousedown', preventBubble, { passive: false });
-  div.addEventListener('click', preventBubble, { passive: false });
+  // Исправление для мобильных устройств: используем только click события
+  if (isMobile) {
+    // Отключаем все touch события для всей строки
+    ['touchstart', 'touchmove', 'touchend'].forEach(eventType => {
+      div.addEventListener(eventType, function(e) {
+        // Разрешаем события только для input и select
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+          e.stopPropagation();
+        }
+      }, { passive: true });
+    });
+    
+    // Добавляем специальную обработку для фокуса
+    qtyInput.addEventListener('focus', function() {
+      this.style.backgroundColor = '#fff';
+    });
+    
+    qtyInput.addEventListener('blur', function() {
+      this.style.backgroundColor = '#fffaf0';
+    });
+  }
   
   updateResultAndSave();
 }
@@ -597,10 +634,11 @@ function saveCalcRows() {
 
 // Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM загружен, isMobile:', isMobile);
+  
   // Обработчики вкладок
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      e.stopPropagation();
       const tabName = btn.getAttribute('data-tab');
       openTab(tabName);
     });
@@ -614,7 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('togglePriceSortBtn').addEventListener('click', togglePriceSort);
   document.getElementById('saveMarkupBtn').addEventListener('click', saveMarkup);
 
-  // Делегирование событий
+  // Делегирование событий для списка продуктов
   document.getElementById('productListDisplay').addEventListener('click', (e) => {
     if (e.target.classList.contains('edit-product-btn')) {
       const index = parseInt(e.target.getAttribute('data-index'));
@@ -631,51 +669,53 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('inputs').addEventListener('click', (e) => {
-    if (e.target.classList.contains('delete-row-btn')) {
-      e.target.closest('.row').remove();
-      updateResultAndSave();
-    }
-  });
-
-  // Обработчики изменений
-  document.getElementById('result').addEventListener('change', (e) => {
-    if (e.target.id === 'detailedMode') {
-      updateResultAndSave();
-    }
-  });
-
-  // Исправление для мобильных устройств: отдельный обработчик для полей ввода
+  // Упрощенный обработчик для полей ввода - только input события
   document.getElementById('inputs').addEventListener('input', (e) => {
     if (e.target.matches('input[type="number"]')) {
       updateResultAndSave();
     }
   });
 
-  // Предотвращаем прокрутку и другие события при фокусе на поле ввода
-  document.getElementById('inputs').addEventListener('touchstart', (e) => {
-    if (e.target.tagName === 'INPUT') {
-      e.stopPropagation();
+  // Обработчик изменений для чекбокса
+  document.getElementById('result').addEventListener('change', (e) => {
+    if (e.target.id === 'detailedMode') {
+      updateResultAndSave();
     }
-  }, { passive: false });
+  });
 
-  document.getElementById('inputs').addEventListener('touchmove', (e) => {
-    if (e.target.tagName === 'INPUT') {
-      e.stopPropagation();
-    }
-  }, { passive: false });
+  // Для мобильных: упрощаем обработку событий
+  if (isMobile) {
+    // Отключаем все сложные обработчики touch для контейнера
+    const inputsContainer = document.getElementById('inputs');
+    
+    // Разрешаем только простые события
+    inputsContainer.addEventListener('click', (e) => {
+      // Для кнопок удаления уже есть отдельные обработчики
+      if (e.target.classList.contains('delete-row-btn')) {
+        e.preventDefault();
+        e.target.closest('.row').remove();
+        updateResultAndSave();
+      }
+    }, { passive: true });
+    
+    // Для полей ввода используем только focus/blur
+    inputsContainer.addEventListener('focusin', (e) => {
+      if (e.target.tagName === 'INPUT') {
+        console.log('Фокус на input');
+      }
+    }, true);
+    
+    inputsContainer.addEventListener('focusout', (e) => {
+      if (e.target.tagName === 'INPUT') {
+        console.log('Потеря фокуса input');
+        updateResultAndSave();
+      }
+    }, true);
+  }
 
   window.addEventListener('resize', () => {
     updateAllCalcSelects();
   });
-
-  // Исправление: отключаем поведение по умолчанию для всего контейнера
-  document.getElementById('inputs').addEventListener('touchstart', (e) => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
-      e.stopPropagation();
-      e.preventDefault();
-    }
-  }, { passive: false });
 
   loadAllData();
 });
