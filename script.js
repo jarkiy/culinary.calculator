@@ -3,8 +3,9 @@ let sortType = 'name';
 let priceSortDirection = 'desc';
 let nameSortDirection = 'asc';
 
-// Флаг для отслеживания состояния на мобильных устройствах
-let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+// Флаг и таймер для управления обновлениями
+let updateTimeout = null;
+let isUpdating = false;
 
 function confirmDelete(action, callback) {
   const message = action === 'product' 
@@ -50,7 +51,7 @@ function loadAllData() {
   document.getElementById('recipeName').value = savedRecipeName || 'Рецепт';
   document.getElementById('recipeName').addEventListener('input', () => {
     localStorage.setItem('recipeName', document.getElementById('recipeName').value);
-    updateResult();
+    scheduleUpdate();
   });
 
   loadMarkup();
@@ -80,7 +81,7 @@ function saveMarkup() {
     packaging: document.getElementById('packaging').value || '0'
   };
   localStorage.setItem('markupData', JSON.stringify(data));
-  updateResult();
+  scheduleUpdate();
   alert('Настройки сохранены! 🍳');
 }
 
@@ -299,13 +300,8 @@ function createQtyInput(unit, value = '') {
   input.min = '0';
   input.value = value;
   
-  // Важное исправление для мобильных устройств
+  // Атрибуты для лучшей работы на мобильных
   input.setAttribute('inputmode', 'decimal');
-  input.setAttribute('pattern', '[0-9]*');
-  
-  // Дополнительные атрибуты для улучшения работы на мобильных
-  input.style.webkitAppearance = 'none';
-  input.style.mozAppearance = 'textfield';
   
   if (unit === 'мл') {
     input.step = '0.1';
@@ -318,16 +314,14 @@ function createQtyInput(unit, value = '') {
     input.placeholder = 'шт';
   }
   
-  // Отключаем обработку событий для самого input
-  if (isMobile) {
-    input.addEventListener('touchstart', function(e) {
-      e.stopPropagation();
-    }, { passive: true });
-    
-    input.addEventListener('touchend', function(e) {
-      e.stopPropagation();
-    }, { passive: true });
-  }
+  // Стили для предотвращения проблем с фокусом
+  input.style.cssText = `
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+    -webkit-tap-highlight-color: transparent;
+  `;
   
   return input;
 }
@@ -360,14 +354,14 @@ function updateAllCalcSelects() {
       const newUnitEl = createUnitLabel(newUnit);
       qtyInput.replaceWith(newQty);
       unitLabel.replaceWith(newUnitEl);
-      updateResultAndSave();
+      scheduleUpdate();
     };
 
     oldSelect.replaceWith(newSelect);
     oldQtyInput.replaceWith(newQtyInput);
     oldUnitLabel.replaceWith(newUnitLabel);
   });
-  updateResultAndSave();
+  scheduleUpdate();
 }
 
 function addCalcRow() {
@@ -392,14 +386,7 @@ function addCalcRowWithData(productName = '', qty = '') {
   const deleteBtn = document.createElement('button');
   deleteBtn.textContent = '🗑️';
   deleteBtn.classList.add('delete-row-btn');
-  
-  // Исправление для кнопки удаления
-  deleteBtn.addEventListener('click', function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    div.remove();
-    updateResultAndSave();
-  });
+  deleteBtn.type = 'button'; // Важно для предотвращения отправки формы
 
   const inputGroup = document.createElement('div');
   inputGroup.className = 'input-group';
@@ -410,44 +397,44 @@ function addCalcRowWithData(productName = '', qty = '') {
     const newUnitEl = createUnitLabel(newUnit);
     qtyInput.replaceWith(newQty);
     unitLabel.replaceWith(newUnitEl);
-    updateResultAndSave();
+    scheduleUpdate();
   };
+
+  // Обработчик для поля ввода с отложенным обновлением
+  qtyInput.addEventListener('input', () => {
+    scheduleUpdate();
+  });
 
   inputGroup.append(qtyInput, unitLabel, deleteBtn);
   div.append(select, inputGroup);
   container.appendChild(div);
   
-  // Исправление для мобильных устройств: используем только click события
-  if (isMobile) {
-    // Отключаем все touch события для всей строки
-    ['touchstart', 'touchmove', 'touchend'].forEach(eventType => {
-      div.addEventListener(eventType, function(e) {
-        // Разрешаем события только для input и select
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
-          e.stopPropagation();
-        }
-      }, { passive: true });
-    });
-    
-    // Добавляем специальную обработку для фокуса
-    qtyInput.addEventListener('focus', function() {
-      this.style.backgroundColor = '#fff';
-    });
-    
-    qtyInput.addEventListener('blur', function() {
-      this.style.backgroundColor = '#fffaf0';
-    });
-  }
-  
-  updateResultAndSave();
+  scheduleUpdate();
+  return div;
 }
 
 function clearAllRows() {
   if (document.querySelectorAll('#inputs .row').length === 0) return;
   confirmDelete('all', () => {
     document.getElementById('inputs').innerHTML = '';
-    updateResultAndSave();
+    scheduleUpdate();
   });
+}
+
+// Функция для отложенного обновления
+function scheduleUpdate() {
+  if (updateTimeout) {
+    clearTimeout(updateTimeout);
+  }
+  
+  updateTimeout = setTimeout(() => {
+    if (!isUpdating) {
+      isUpdating = true;
+      updateResult();
+      saveCalcRows();
+      isUpdating = false;
+    }
+  }, 500); // 500ms задержка
 }
 
 function updateResult() {
@@ -615,11 +602,6 @@ function updateResult() {
   resultEl.scrollTop = scrollTop;
 }
 
-function updateResultAndSave() {
-  updateResult();
-  saveCalcRows();
-}
-
 function saveCalcRows() {
   const rows = [];
   document.querySelectorAll('#inputs .row').forEach(row => {
@@ -634,7 +616,7 @@ function saveCalcRows() {
 
 // Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('DOM загружен, isMobile:', isMobile);
+  console.log('DOM загружен, инициализация...');
   
   // Обработчики вкладок
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -644,7 +626,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Обработчики кнопок
+  // Обработчики основных кнопок
   document.getElementById('addCalcRowBtn').addEventListener('click', addCalcRow);
   document.getElementById('clearAllBtn').addEventListener('click', clearAllRows);
   document.getElementById('addProductBtn').addEventListener('click', addProductToList);
@@ -654,68 +636,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Делегирование событий для списка продуктов
   document.getElementById('productListDisplay').addEventListener('click', (e) => {
-    if (e.target.classList.contains('edit-product-btn')) {
-      const index = parseInt(e.target.getAttribute('data-index'));
+    const target = e.target;
+    
+    if (target.classList.contains('edit-product-btn')) {
+      const index = parseInt(target.getAttribute('data-index'));
       editProduct(index);
-    } else if (e.target.classList.contains('remove-product-btn')) {
-      const index = parseInt(e.target.getAttribute('data-index'));
+    } else if (target.classList.contains('remove-product-btn')) {
+      const index = parseInt(target.getAttribute('data-index'));
       removeProduct(index);
-    } else if (e.target.classList.contains('save-edit-btn')) {
-      const index = parseInt(e.target.getAttribute('data-index'));
-      saveEdit(index, e.target);
-    } else if (e.target.classList.contains('cancel-edit-btn')) {
-      const index = parseInt(e.target.getAttribute('data-index'));
+    } else if (target.classList.contains('save-edit-btn')) {
+      const index = parseInt(target.getAttribute('data-index'));
+      saveEdit(index, target);
+    } else if (target.classList.contains('cancel-edit-btn')) {
+      const index = parseInt(target.getAttribute('data-index'));
       cancelEdit(index);
     }
   });
 
-  // Упрощенный обработчик для полей ввода - только input события
-  document.getElementById('inputs').addEventListener('input', (e) => {
-    if (e.target.matches('input[type="number"]')) {
-      updateResultAndSave();
+  // Делегирование событий для кнопок удаления в строках расчета
+  document.getElementById('inputs').addEventListener('click', (e) => {
+    const target = e.target;
+    
+    if (target.classList.contains('delete-row-btn')) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const row = target.closest('.row');
+      if (row) {
+        row.remove();
+        scheduleUpdate();
+      }
     }
   });
 
-  // Обработчик изменений для чекбокса
-  document.getElementById('result').addEventListener('change', (e) => {
+  // Обработчик для чекбокса подробного режима
+  document.addEventListener('change', (e) => {
     if (e.target.id === 'detailedMode') {
-      updateResultAndSave();
+      scheduleUpdate();
     }
   });
 
-  // Для мобильных: упрощаем обработку событий
-  if (isMobile) {
-    // Отключаем все сложные обработчики touch для контейнера
-    const inputsContainer = document.getElementById('inputs');
-    
-    // Разрешаем только простые события
-    inputsContainer.addEventListener('click', (e) => {
-      // Для кнопок удаления уже есть отдельные обработчики
-      if (e.target.classList.contains('delete-row-btn')) {
-        e.preventDefault();
-        e.target.closest('.row').remove();
-        updateResultAndSave();
-      }
-    }, { passive: true });
-    
-    // Для полей ввода используем только focus/blur
-    inputsContainer.addEventListener('focusin', (e) => {
-      if (e.target.tagName === 'INPUT') {
-        console.log('Фокус на input');
-      }
-    }, true);
-    
-    inputsContainer.addEventListener('focusout', (e) => {
-      if (e.target.tagName === 'INPUT') {
-        console.log('Потеря фокуса input');
-        updateResultAndSave();
-      }
-    }, true);
-  }
+  // Обработчик для изменений в дополнительных расходах
+  document.getElementById('markup')?.addEventListener('input', (e) => {
+    if (e.target.matches('input[type="number"]') || e.target.matches('select')) {
+      scheduleUpdate();
+    }
+  });
 
   window.addEventListener('resize', () => {
     updateAllCalcSelects();
   });
 
+  // Загружаем данные
   loadAllData();
+  
+  console.log('Инициализация завершена');
 });
