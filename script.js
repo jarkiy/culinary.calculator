@@ -6,6 +6,7 @@ let nameSortDirection = 'asc';
 // Флаг и таймер для управления обновлениями
 let updateTimeout = null;
 let isUpdating = false;
+let activeInput = null;
 
 function confirmDelete(action, callback) {
   const message = action === 'product' 
@@ -123,7 +124,7 @@ function renderProductList() {
   } else if (sortType === 'price-asc') {
     sorted.sort((a, b) => a.price - b.price);
   } else if (sortType === 'price-desc') {
-    sorted.sort((a, b) => b.price - b.price);
+    sorted.sort((a, b) => b.price - a.price);
   }
 
   sorted.forEach(item => {
@@ -172,18 +173,18 @@ function editProduct(index) {
   formDiv.className = 'edit-form';
   formDiv.innerHTML = `
     <input type="text" value="${item.name}" data-field="name" style="width:120px;" placeholder="Название">
-    <input type="text" value="${item.pack}" data-field="pack" style="width:80px;" placeholder="Упак.">
+    <input type="number" value="${item.pack}" min="1" step="1" data-field="pack" style="width:80px;" placeholder="Упак.">
     <select data-field="unit" style="width:90px;">
       <option value="шт" ${item.unit === 'шт' ? 'selected' : ''}>🥚 шт</option>
       <option value="мл" ${item.unit === 'мл' ? 'selected' : ''}>🥛 мл</option>
       <option value="гр" ${item.unit === 'гр' ? 'selected' : ''}>⚖️ гр</option>
     </select>
-    <input type="text" value="${item.price}" data-field="price" style="width:90px;" placeholder="Цена">
+    <input type="number" value="${item.price}" min="0" step="0.01" data-field="price" style="width:90px;" placeholder="Цена">
     
-    <input type="text" value="${item.protein}" data-field="protein" placeholder="Белки" style="width:70px;">
-    <input type="text" value="${item.fat}" data-field="fat" placeholder="Жиры" style="width:70px;">
-    <input type="text" value="${item.carbs}" data-field="carbs" placeholder="Угл." style="width:70px;">
-    <input type="text" value="${item.calories}" data-field="calories" placeholder="Ккал" style="width:70px;">
+    <input type="number" value="${item.protein}" min="0" step="0.1" data-field="protein" placeholder="Белки" style="width:70px;">
+    <input type="number" value="${item.fat}" min="0" step="0.1" data-field="fat" placeholder="Жиры" style="width:70px;">
+    <input type="number" value="${item.carbs}" min="0" step="0.1" data-field="carbs" placeholder="Угл." style="width:70px;">
+    <input type="number" value="${item.calories}" min="0" step="1" data-field="calories" placeholder="Ккал" style="width:70px;">
     
     <button type="button" class="save-edit-btn" data-index="${index}">✅</button>
     <button type="button" class="cancel-edit-btn" data-index="${index}">❌</button>
@@ -195,14 +196,14 @@ function editProduct(index) {
 function saveEdit(index, btn) {
   const form = btn.closest('.edit-form');
   const name = form.querySelector('[data-field="name"]').value.trim();
-  const pack = parseFloat(form.querySelector('[data-field="pack"]').value.replace(',', '.')) || 1;
+  const pack = parseFloat(form.querySelector('[data-field="pack"]').value) || 1;
   const unit = form.querySelector('[data-field="unit"]').value;
-  const price = parseFloat(form.querySelector('[data-field="price"]').value.replace(',', '.')) || 0;
+  const price = parseFloat(form.querySelector('[data-field="price"]').value) || 0;
 
-  const protein = parseFloat(form.querySelector('[data-field="protein"]')?.value.replace(',', '.')) || 0;
-  const fat = parseFloat(form.querySelector('[data-field="fat"]')?.value.replace(',', '.')) || 0;
-  const carbs = parseFloat(form.querySelector('[data-field="carbs"]')?.value.replace(',', '.')) || 0;
-  const calories = parseFloat(form.querySelector('[data-field="calories"]')?.value.replace(',', '.')) || 0;
+  const protein = parseFloat(form.querySelector('[data-field="protein"]')?.value) || 0;
+  const fat = parseFloat(form.querySelector('[data-field="fat"]')?.value) || 0;
+  const carbs = parseFloat(form.querySelector('[data-field="carbs"]')?.value) || 0;
+  const calories = parseFloat(form.querySelector('[data-field="calories"]')?.value) || 0;
 
   if (!name) {
     alert('Название не может быть пустым');
@@ -236,14 +237,14 @@ function removeProduct(index) {
 
 function addProductToList() {
   const name = document.getElementById('newProductName').value.trim();
-  const pack = parseFloat(document.getElementById('newProductPack').value.replace(',', '.')) || 1;
+  const pack = parseFloat(document.getElementById('newProductPack').value) || 1;
   const unit = document.getElementById('newProductUnit').value;
-  const price = parseFloat(document.getElementById('newProductPrice').value.replace(',', '.')) || 0;
+  const price = parseFloat(document.getElementById('newProductPrice').value) || 0;
   
-  const protein = parseFloat(document.getElementById('newProtein').value.replace(',', '.')) || 0;
-  const fat = parseFloat(document.getElementById('newFat').value.replace(',', '.')) || 0;
-  const carbs = parseFloat(document.getElementById('newCarbs').value.replace(',', '.')) || 0;
-  const calories = parseFloat(document.getElementById('newCalories').value.replace(',', '.')) || 0;
+  const protein = parseFloat(document.getElementById('newProtein').value) || 0;
+  const fat = parseFloat(document.getElementById('newFat').value) || 0;
+  const carbs = parseFloat(document.getElementById('newCarbs').value) || 0;
+  const calories = parseFloat(document.getElementById('newCalories').value) || 0;
 
   if (!name) {
     alert('Введите название');
@@ -316,21 +317,21 @@ function validateNumberInput(value, allowDecimal = true) {
 
 function createQtyInput(unit, value = '') {
   const input = document.createElement('input');
-  input.type = 'text'; // Меняем на text для мобильных устройств
+  input.type = 'text'; // Используем text для мобильных
   input.value = value;
   
-  // Атрибуты для лучшей работы на мобильных
+  // Важные атрибуты для мобильных устройств
   input.setAttribute('inputmode', 'decimal');
   input.setAttribute('pattern', '[0-9]*[.,]?[0-9]*');
   
-  // Стили для предотвращения проблем с фокусом
+  // Стили для предотвращения стандартного поведения
   input.style.cssText = `
     -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
     user-select: text;
     -webkit-tap-highlight-color: transparent;
+    -webkit-appearance: none;
     appearance: none;
+    touch-action: manipulation;
   `;
   
   if (unit === 'мл') {
@@ -340,6 +341,28 @@ function createQtyInput(unit, value = '') {
   } else {
     input.placeholder = 'шт';
   }
+  
+  // Обработчик focus - запоминаем активное поле
+  input.addEventListener('focus', function() {
+    activeInput = this;
+    this.style.backgroundColor = '#fff';
+    console.log('Фокус получен');
+  });
+  
+  // Обработчик blur
+  input.addEventListener('blur', function() {
+    if (activeInput === this) {
+      activeInput = null;
+    }
+    this.style.backgroundColor = '#fffaf0';
+    
+    // Очищаем поле, если там только точка или запятая
+    if (this.value === '.' || this.value === ',') {
+      this.value = '';
+    }
+    
+    scheduleUpdate();
+  });
   
   // Обработчик ввода для валидации
   input.addEventListener('input', function(e) {
@@ -351,19 +374,26 @@ function createQtyInput(unit, value = '') {
     
     // Восстанавливаем позицию курсора
     const diff = this.value.length - oldValue.length;
-    this.setSelectionRange(cursorPosition + diff, cursorPosition + diff);
+    setTimeout(() => {
+      this.setSelectionRange(cursorPosition + diff, cursorPosition + diff);
+    }, 0);
     
     scheduleUpdate();
   });
   
-  // Обработчик для blur (когда поле теряет фокус)
-  input.addEventListener('blur', function() {
-    // Очищаем поле, если там только точка или запятая
-    if (this.value === '.' || this.value === ',') {
-      this.value = '';
-    }
-    scheduleUpdate();
-  });
+  // Важно: предотвращаем всплытие событий touch для этого input
+  input.addEventListener('touchstart', function(e) {
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+  }, { passive: true });
+  
+  input.addEventListener('touchmove', function(e) {
+    e.stopPropagation();
+  }, { passive: true });
+  
+  input.addEventListener('touchend', function(e) {
+    e.stopPropagation();
+  }, { passive: true });
   
   return input;
 }
@@ -372,6 +402,12 @@ function createUnitLabel(unit) {
   const span = document.createElement('span');
   span.className = 'unit-label';
   span.textContent = unit;
+  
+  // Предотвращаем взаимодействие с unit-label
+  span.addEventListener('touchstart', function(e) {
+    e.stopPropagation();
+  }, { passive: true });
+  
   return span;
 }
 
@@ -429,6 +465,14 @@ function addCalcRowWithData(productName = '', qty = '') {
   deleteBtn.textContent = '🗑️';
   deleteBtn.classList.add('delete-row-btn');
   deleteBtn.type = 'button';
+  
+  // Обработчик для кнопки удаления
+  deleteBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    div.remove();
+    scheduleUpdate();
+  });
 
   const inputGroup = document.createElement('div');
   inputGroup.className = 'input-group';
@@ -445,6 +489,26 @@ function addCalcRowWithData(productName = '', qty = '') {
   inputGroup.append(qtyInput, unitLabel, deleteBtn);
   div.append(select, inputGroup);
   container.appendChild(div);
+  
+  // Важно: отключаем все стандартные обработчики для строки
+  div.addEventListener('touchstart', function(e) {
+    // Разрешаем события только для определенных элементов
+    if (e.target.tagName !== 'INPUT' && 
+        e.target.tagName !== 'SELECT' && 
+        e.target.tagName !== 'BUTTON') {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, { passive: false });
+  
+  div.addEventListener('touchend', function(e) {
+    if (e.target.tagName !== 'INPUT' && 
+        e.target.tagName !== 'SELECT' && 
+        e.target.tagName !== 'BUTTON') {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, { passive: false });
   
   scheduleUpdate();
   return div;
@@ -471,7 +535,7 @@ function scheduleUpdate() {
       saveCalcRows();
       isUpdating = false;
     }
-  }, 300); // 300ms задержка
+  }, 300);
 }
 
 function updateResult() {
@@ -656,6 +720,22 @@ function saveCalcRows() {
 document.addEventListener('DOMContentLoaded', () => {
   console.log('DOM загружен, инициализация...');
   
+  // Отключаем стандартное поведение для всего документа на мобильных
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  if (isMobile) {
+    // Предотвращаем масштабирование при фокусе
+    document.addEventListener('touchstart', function(e) {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+        e.preventDefault();
+      }
+    }, { passive: false });
+    
+    // Устанавливаем минимальную высоту для контейнера с полями ввода
+    const inputsContainer = document.getElementById('inputs');
+    inputsContainer.style.minHeight = '50px';
+  }
+  
   // Обработчики вкладок
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -691,22 +771,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Делегирование событий для кнопок удаления в строках расчета
-  document.getElementById('inputs').addEventListener('click', (e) => {
-    const target = e.target;
-    
-    if (target.classList.contains('delete-row-btn')) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      const row = target.closest('.row');
-      if (row) {
-        row.remove();
-        scheduleUpdate();
-      }
-    }
-  });
-
   // Обработчик для чекбокса подробного режима
   document.addEventListener('change', (e) => {
     if (e.target.id === 'detailedMode') {
@@ -718,15 +782,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('markup')?.addEventListener('input', (e) => {
     if (e.target.matches('input[type="text"]') || e.target.matches('input[type="number"]') || e.target.matches('select')) {
       scheduleUpdate();
-    }
-  });
-
-  // Также обновляем обработку других числовых полей
-  document.querySelectorAll('input[type="number"]').forEach(input => {
-    // Заменяем type="number" на type="text" для мобильных
-    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-      input.type = 'text';
-      input.setAttribute('inputmode', 'decimal');
     }
   });
 
