@@ -71,10 +71,10 @@ function loadMarkup() {
 
 function saveMarkup() {
   const data = {
-    laborValue: document.getElementById('laborValue').value,
+    laborValue: document.getElementById('laborValue').value || '0',
     laborType: document.getElementById('laborType').value,
-    delivery: document.getElementById('delivery').value,
-    packaging: document.getElementById('packaging').value
+    delivery: document.getElementById('delivery').value || '0',
+    packaging: document.getElementById('packaging').value || '0'
   };
   localStorage.setItem('markupData', JSON.stringify(data));
   updateResult();
@@ -259,12 +259,12 @@ function addProductToList() {
   updateAllCalcSelects();
 
   document.getElementById('newProductName').value = '';
-  document.getElementById('newProductPack').value = '10';
-  document.getElementById('newProductPrice').value = '0';
-  document.getElementById('newProtein').value = '0';
-  document.getElementById('newFat').value = '0';
-  document.getElementById('newCarbs').value = '0';
-  document.getElementById('newCalories').value = '0';
+  document.getElementById('newProductPack').value = '1';
+  document.getElementById('newProductPrice').value = '';
+  document.getElementById('newProtein').value = '';
+  document.getElementById('newFat').value = '';
+  document.getElementById('newCarbs').value = '';
+  document.getElementById('newCalories').value = '';
 }
 
 function getProductInfo(name) {
@@ -290,7 +290,7 @@ function createProductSelect(selectedName = '') {
   return select;
 }
 
-function createQtyInput(unit, value = '1') {
+function createQtyInput(unit, value = '') {
   const input = document.createElement('input');
   input.type = 'number';
   input.min = '0';
@@ -305,6 +305,20 @@ function createQtyInput(unit, value = '1') {
     input.step = '1';
     input.placeholder = 'шт';
   }
+  
+  // Исправление для мобильных устройств
+  input.addEventListener('touchstart', function(e) {
+    e.stopPropagation();
+  });
+  
+  input.addEventListener('mousedown', function(e) {
+    e.stopPropagation();
+  });
+  
+  input.addEventListener('click', function(e) {
+    e.stopPropagation();
+  });
+  
   return input;
 }
 
@@ -312,6 +326,12 @@ function createUnitLabel(unit) {
   const span = document.createElement('span');
   span.className = 'unit-label';
   span.textContent = unit;
+  
+  // Исправление для мобильных устройств
+  span.addEventListener('touchstart', function(e) {
+    e.stopPropagation();
+  });
+  
   return span;
 }
 
@@ -352,10 +372,10 @@ function addCalcRow() {
     openTab('products');
     return;
   }
-  addCalcRowWithData('', '1');
+  addCalcRowWithData('', '');
 }
 
-function addCalcRowWithData(productName = '', qty = '1') {
+function addCalcRowWithData(productName = '', qty = '') {
   const container = document.getElementById('inputs');
   const div = document.createElement('div');
   div.className = 'row';
@@ -368,9 +388,19 @@ function addCalcRowWithData(productName = '', qty = '1') {
   const deleteBtn = document.createElement('button');
   deleteBtn.textContent = '🗑️';
   deleteBtn.classList.add('delete-row-btn');
+  
+  // Исправление для мобильных устройств
+  deleteBtn.addEventListener('touchstart', function(e) {
+    e.stopPropagation();
+  });
 
   const inputGroup = document.createElement('div');
   inputGroup.className = 'input-group';
+  
+  // Исправление для мобильных устройств
+  inputGroup.addEventListener('touchstart', function(e) {
+    e.stopPropagation();
+  });
   
   select.onchange = () => {
     const newUnit = getProductInfo(select.value).unit;
@@ -383,6 +413,20 @@ function addCalcRowWithData(productName = '', qty = '1') {
 
   inputGroup.append(qtyInput, unitLabel, deleteBtn);
   div.append(select, inputGroup);
+  
+  // Исправление для мобильных устройств - предотвращение закрытия клавиатуры
+  div.addEventListener('touchstart', function(e) {
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
+      e.stopPropagation();
+    }
+  });
+  
+  div.addEventListener('mousedown', function(e) {
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
+      e.stopPropagation();
+    }
+  });
+  
   container.appendChild(div);
   updateResultAndSave();
 }
@@ -546,6 +590,12 @@ function updateResult() {
   copyIcon.id = 'copyIcon';
   copyIcon.innerHTML = '📋';
   copyIcon.title = 'Копировать результат';
+  
+  // Исправление для мобильных устройств
+  copyIcon.addEventListener('touchstart', function(e) {
+    e.stopPropagation();
+  });
+  
   copyIcon.onclick = () => {
     navigator.clipboard?.writeText(text).then(() => {
       copyIcon.textContent = '✅';
@@ -619,16 +669,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Обработчики изменений
+  // Обработчики изменений - исправлено для мобильных устройств
   document.getElementById('result').addEventListener('change', (e) => {
     if (e.target.id === 'detailedMode') {
       updateResultAndSave();
     }
   });
 
+  // Исправлено: используем событие 'input' с задержкой для мобильных устройств
+  let inputTimeout;
   document.getElementById('inputs').addEventListener('input', (e) => {
     if (e.target.matches('input[type="number"]')) {
-      updateResultAndSave();
+      clearTimeout(inputTimeout);
+      inputTimeout = setTimeout(() => {
+        updateResultAndSave();
+      }, 300);
     }
   });
 
