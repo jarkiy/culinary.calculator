@@ -131,6 +131,8 @@ input:focus, select:focus {
   border-radius: 10px;
   border: 1px solid #e6ccb2;
   transition: transform 0.2s;
+  -webkit-user-select: none;
+  user-select: none;
 }
 .row:hover {
   transform: translateY(-2px);
@@ -149,10 +151,15 @@ input:focus, select:focus {
   flex-grow: 1;
 }
 
+.row input[type="text"],
 .row input[type="number"] {
   width: 90px;
   text-align: right;
   flex-shrink: 0;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-tap-highlight-color: transparent !important;
+  touch-action: manipulation !important;
 }
 
 .unit-label {
@@ -194,6 +201,7 @@ input:focus, select:focus {
     margin-top: 4px;
   }
   
+  .row input[type="text"],
   .row input[type="number"] {
     width: 100%;
     margin: 0;
@@ -499,6 +507,7 @@ button:active {
     min-width: 100%;
     font-size: 14px;
   }
+  .row input[type="text"],
   .row input[type="number"] {
     width: 100%;
     font-size: 14px;
@@ -541,4 +550,102 @@ button:active {
 
 #newProductName {
   width: 100% !important;
+}
+
+/* Исправления для мобильных устройств */
+@media (max-width: 600px) {
+  #inputs {
+    min-height: 50px;
+  }
+  
+  .row input[type="text"],
+  .row input[type="number"] {
+    font-size: 16px !important;
+    min-height: 44px;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  
+  /* Увеличиваем область нажатия для кнопок */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .delete-row-btn {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Исправление для полей ввода на мобильных устройствах */
+input[type="text"] {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-tap-highlight-color: transparent !important;
+  touch-action: manipulation !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Разрешаем выделение в полях ввода */
+.row input[type="text"],
+.row input[type="number"] {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+
+/* Улучшаем видимость фокуса */
+input:focus {
+  outline: 2px solid #d2691e !important;
+  outline-offset: -2px !important;
+  background-color: #fff !important;
+  z-index: 10;
+  position: relative;
+}
+
+/* Убираем стандартные стрелки у числовых полей */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Предотвращаем изменение размера шрифта в iOS */
+input[type="text"],
+input[type="number"],
+select {
+  font-size: 16px !important;
+}
+
+/* Улучшаем видимость активного состояния */
+.row:active {
+  transform: none !important;
+}
+
+/* Оптимизация для сенсорных устройств */
+@media (hover: none) and (pointer: coarse) {
+  .row:hover {
+    transform: none;
+  }
+  
+  button:hover {
+    transform: none;
+  }
+  
+  .tab-btn:hover {
+    background: none;
+  }
+  
+  /* Увеличиваем зону клика для мобильных */
+  input, select, button {
+    min-height: 44px;
+  }
+  
+  .delete-row-btn {
+    padding: 12px !important;
+  }
 }
