@@ -24,16 +24,14 @@
       <h2 class="section-title">Создание рецепта</h2>
       <div>
         <label for="recipeName">🍽️ Название:</label>
-        <input type="text" id="recipeName" placeholder="Название вашего блюда" style="width: 100%; padding: 8px 12px; border: 1px solid #d4a574; border-radius: 8px; font-size: 16px;">
+        <input type="text" id="recipeName" placeholder="Название вашего блюда">
       </div>
       <div id="inputs"></div>
       <div class="calc-actions">
         <button id="addCalcRowBtn">➕ Добавить ингредиент</button>
         <button id="clearAllBtn" style="background:linear-gradient(to bottom, #ffe6e6, #ffcccc); color:#b22222;">🗑️ Очистить всё</button>
       </div>
-      <div id="result">
-        Нет данных
-      </div>
+      <div id="result">Нет данных</div>
     </div>
 
     <!-- Вкладка: Ингредиенты -->
@@ -43,26 +41,25 @@
         <div class="basic-info-section">
           <div class="form-field">
             <label>🍎 Название ингредиента:</label>
-            <input type="text" id="newProductName" placeholder="Например, Яйцо куриное" required>
+            <input type="text" id="newProductName" placeholder="Например, Яйцо куриное">
           </div>
           <div class="pack-unit-row">
             <div class="form-field">
               <label>📦 Упаковка:</label>
-              <input type="number" id="newProductPack" min="1" value="10" step="1" required>
+              <input type="number" id="newProductPack" min="1" step="1" placeholder="10">
             </div>
             <div class="form-field">
               <label>📏 Ед. изм.:</label>
-              <select id="newProductUnit" required>
+              <select id="newProductUnit">
                 <option value="шт">🥚 штуки</option>
                 <option value="мл">🥛 миллилитры</option>
                 <option value="гр">⚖️ граммы</option>
               </select>
             </div>
           </div>
-          <!-- Поле "Вес одной штуки" будет добавлено сюда динамически -->
           <div class="form-field">
             <label>💰 Цена (₽):</label>
-            <input type="number" id="newProductPrice" min="0" step="0.01" value="120" placeholder="120.00" required>
+            <input type="number" id="newProductPrice" min="0" step="0.01" placeholder="120.00">
           </div>
         </div>
 
@@ -71,19 +68,19 @@
           <div class="nutrition-grid-new">
             <div class="nutrition-item">
               <div class="nutrition-label">Белки (г)</div>
-              <input type="number" id="newProtein" min="0" step="0.1" value="0" placeholder="12.0" class="nutrition-input">
+              <input type="number" id="newProtein" min="0" step="0.1" placeholder="12.0" class="nutrition-input">
             </div>
             <div class="nutrition-item">
               <div class="nutrition-label">Жиры (г)</div>
-              <input type="number" id="newFat" min="0" step="0.1" value="0" placeholder="11.0" class="nutrition-input">
+              <input type="number" id="newFat" min="0" step="0.1" placeholder="11.0" class="nutrition-input">
             </div>
             <div class="nutrition-item">
               <div class="nutrition-label">Углеводы (г)</div>
-              <input type="number" id="newCarbs" min="0" step="0.1" value="0" placeholder="0.7" class="nutrition-input">
+              <input type="number" id="newCarbs" min="0" step="0.1" placeholder="0.7" class="nutrition-input">
             </div>
             <div class="nutrition-item">
               <div class="nutrition-label">Ккал</div>
-              <input type="number" id="newCalories" min="0" step="1" value="0" placeholder="157" class="nutrition-input">
+              <input type="number" id="newCalories" min="0" step="1" placeholder="157" class="nutrition-input">
             </div>
           </div>
         </div>
@@ -106,7 +103,7 @@
       <div style="background: #fffaf0; padding: 20px; border-radius: 10px; border: 1px solid #e6ccb2; margin-bottom: 20px;">
         <div style="margin-bottom: 16px; display: flex; align-items: center;">
           <label style="width: 120px;">👨‍🍳 Работа:</label>
-          <input type="number" id="laborValue" min="0" step="0.01" value="0" placeholder="0.00" style="width: 120px;">
+          <input type="number" id="laborValue" min="0" step="0.01" placeholder="0.00" style="width: 120px;">
           <select id="laborType" style="width: 80px; margin-left: 10px;">
             <option value="fixed">₽</option>
             <option value="percent">%</option>
@@ -114,11 +111,11 @@
         </div>
         <div style="margin-bottom: 16px; display: flex; align-items: center;">
           <label style="width: 120px;">🚚 Доставка:</label>
-          <input type="number" id="delivery" min="0" step="0.01" value="0" placeholder="0.00" style="width: 120px;"> ₽
+          <input type="number" id="delivery" min="0" step="0.01" placeholder="0.00" style="width: 120px;"> ₽
         </div>
         <div style="margin-bottom: 16px; display: flex; align-items: center;">
           <label style="width: 120px;">🎁 Упаковка:</label>
-          <input type="number" id="packaging" min="0" step="0.01" value="0" placeholder="0.00" style="width: 120px;"> ₽
+          <input type="number" id="packaging" min="0" step="0.01" placeholder="0.00" style="width: 120px;"> ₽
         </div>
         <button id="saveMarkupBtn" style="margin-top: 10px; width: 100%; justify-content: center;">💾 Сохранить настройки</button>
       </div>
